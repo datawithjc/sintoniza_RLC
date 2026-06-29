@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sintoniza · Juego de Circuitos RLC · UNAD</title>
+<meta name="description" content="Juego interactivo para familiarizarse con conceptos básicos de circuitos eléctricos y RLC. Recurso educativo UNAD para Ingeniería Electrónica.">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  /* Paleta institucional UNAD (extraída de la presentación) */
+  --blue-deep:#005681;
+  --blue:#00739B;
+  --blue-bright:#0096C7;
+  --gold:#F4BE00;
+  --gold-deep:#D9A400;
+  --orange:#EE7203;
+  --purple:#74189B;
+  --ink:#243140;
+  --ink-soft:#5b6b7d;
+  --ink-faint:#8a98a8;
+  --line:#dbe6ee;
+  --bg:#eef4f8;
+  --bg-2:#e3edf4;
+  --card:#ffffff;
+  --good:#1fa055;
+  --good-soft:#e6f6ee;
+  --bad:#e23b2e;
+  --bad-soft:#fdeceb;
+  --r-xl:26px; --r-lg:18px; --r-md:12px; --r-sm:8px;
+  --shadow-sm:0 2px 8px rgba(0,86,129,.07);
+  --shadow:0 14px 36px -14px rgba(0,86,129,.28);
+  --shadow-lg:0 30px 70px -24px rgba(0,86,129,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(0,150,199,.10), transparent 60%),
+    radial-gradient(900px 500px at 5% 105%, rgba(244,190,0,.12), transparent 55%),
+    linear-gradient(180deg,var(--bg),var(--bg-2));
+  min-height:100vh; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+}
+.katex{font-size:1.02em}
+.wrap{max-width:980px;margin:0 auto;padding:clamp(16px,3vw,34px) clamp(14px,3vw,28px) 60px}
+
+/* ===== HEADER ===== */
+header{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand .logo{height:46px;background:#fff;border-radius:9px;padding:5px 8px;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+.brand .bt .eyebrow{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:var(--blue);font-weight:500}
+.brand .bt h1{font-family:'Poppins',sans-serif;font-weight:700;font-size:clamp(19px,2.3vw,25px);line-height:1.05;color:var(--blue-deep)}
+.brand .bt h1 b{color:var(--orange)}
+.hud{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hud .stat{display:flex;flex-direction:column;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:7px 13px;box-shadow:var(--shadow-sm);min-width:62px}
+.hud .stat .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+.hud .stat .v{font-family:'Poppins';font-weight:700;font-size:17px;color:var(--blue-deep);line-height:1.1}
+.hud .stat.score .v{color:var(--orange)}
+.lives{display:flex;gap:4px;align-items:center}
+.heart{width:21px;height:21px;color:var(--orange);transition:transform .3s, opacity .3s}
+.heart.lost{opacity:.22;color:var(--ink-faint);transform:scale(.8)}
+.mute-btn{width:40px;height:40px;display:grid;place-items:center;cursor:pointer;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);color:var(--blue);box-shadow:var(--shadow-sm);transition:all .15s}
+.mute-btn:hover{color:var(--blue-deep);border-color:var(--blue-bright)}
+.mute-btn svg{width:19px;height:19px}
+
+/* ===== SIGNATURE: signal strip ===== */
+.signal-strip{height:46px;border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,#04263a,#063049);box-shadow:var(--shadow-sm);margin-bottom:22px;position:relative}
+.signal-strip canvas{display:block;width:100%;height:100%}
+
+/* ===== PANELS ===== */
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden}
+
+/* ---- START SCREEN ---- */
+.start{padding:clamp(26px,5vw,56px);text-align:center;position:relative;overflow:hidden}
+.start::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(500px 300px at 50% -20%, rgba(0,115,155,.10), transparent 70%);pointer-events:none}
+.start .badge{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);background:rgba(0,115,155,.08);border:1px solid rgba(0,115,155,.2);padding:7px 15px;border-radius:999px;margin-bottom:22px}
+.start h2{font-family:'Poppins';font-weight:800;font-size:clamp(30px,5.4vw,52px);line-height:1.02;color:var(--blue-deep);letter-spacing:-.02em;position:relative}
+.start h2 .em{color:var(--orange);position:relative;display:inline-block}
+.start .tag{font-size:clamp(14px,2vw,17px);color:var(--ink-soft);max-width:560px;margin:16px auto 0;line-height:1.6}
+.modes{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:30px 0 28px}
+.mode-card{display:flex;flex-direction:column;align-items:center;gap:8px;width:128px;padding:18px 12px;border:1px solid var(--line);border-radius:var(--r-lg);background:#fbfdff;box-shadow:var(--shadow-sm)}
+.mode-card .ic{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;box-shadow:var(--shadow-sm)}
+.mode-card .ic svg{width:25px;height:25px;color:#fff}
+.mode-card .t{font-family:'Poppins';font-weight:600;font-size:13px;color:var(--blue-deep)}
+.mode-card .d{font-size:11px;color:var(--ink-faint);line-height:1.4}
+.btn-play{display:inline-flex;align-items:center;gap:11px;cursor:pointer;border:none;font-family:'Poppins';font-weight:700;font-size:18px;color:#fff;padding:16px 40px;border-radius:999px;
+  background:linear-gradient(135deg,var(--orange),var(--gold-deep));
+  box-shadow:0 16px 34px -12px rgba(238,114,3,.6);transition:transform .15s, box-shadow .2s}
+.btn-play:hover{transform:translateY(-3px);box-shadow:0 22px 44px -14px rgba(238,114,3,.7)}
+.btn-play:active{transform:translateY(0)}
+.btn-play svg{width:21px;height:21px}
+.start .best-note{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint)}
+.start .best-note b{color:var(--gold-deep)}
+
+/* ---- PLAY SCREEN ---- */
+.play{padding:0}
+.timerbar{height:6px;background:var(--bg-2);position:relative;overflow:hidden}
+.timerbar .fill{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,var(--blue-bright),var(--gold));transition:transform .1s linear}
+.play-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px clamp(18px,3vw,30px) 0}
+.qtype{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;padding:7px 14px;border-radius:999px;font-weight:500}
+.streak-pill{display:inline-flex;align-items:center;gap:7px;font-family:'Poppins';font-weight:700;font-size:13px;color:var(--orange);background:rgba(238,114,3,.1);border:1px solid rgba(238,114,3,.25);padding:6px 13px;border-radius:999px;opacity:0;transform:scale(.8);transition:all .25s}
+.streak-pill.show{opacity:1;transform:scale(1)}
+.streak-pill svg{width:15px;height:15px}
+.q-body{padding:clamp(20px,3.4vw,34px) clamp(18px,3.4vw,34px)}
+.q-prompt{font-family:'Poppins';font-weight:600;font-size:clamp(18px,2.6vw,24px);color:var(--blue-deep);line-height:1.32;text-align:center;margin-bottom:8px}
+.q-sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:22px}
+.q-visual{display:flex;justify-content:center;align-items:center;min-height:120px;margin:6px 0 24px}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:13px;max-width:620px;margin:0 auto}
+.opt{display:flex;align-items:center;gap:13px;cursor:pointer;text-align:left;border:1.5px solid var(--line);border-radius:var(--r-lg);background:#fbfdff;padding:16px 18px;font-family:'Inter';font-size:16px;font-weight:500;color:var(--ink);transition:all .15s;position:relative}
+.opt:hover{border-color:var(--blue-bright);background:#f3fafd;transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.opt .key{width:28px;height:28px;flex:0 0 auto;border-radius:8px;display:grid;place-items:center;background:var(--bg-2);color:var(--blue);font-family:'JetBrains Mono';font-weight:700;font-size:13px;transition:all .15s}
+.opt:hover .key{background:var(--blue);color:#fff}
+.opt.correct{border-color:var(--good);background:var(--good-soft);color:var(--good)}
+.opt.correct .key{background:var(--good);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.opt.wrong .key{background:var(--bad);color:#fff}
+.opt.dim{opacity:.5}
+.opt:disabled{cursor:default}
+.opt.mono{font-family:'JetBrains Mono',monospace;font-weight:600;justify-content:center}
+.opt.mono .key{position:absolute;left:14px}
+.feedback{max-width:620px;margin:20px auto 0;border-radius:var(--r-lg);padding:15px 18px;display:none;align-items:flex-start;gap:12px;font-size:14.5px;line-height:1.5}
+.feedback.show{display:flex;animation:popIn .3s ease}
+.feedback.ok{background:var(--good-soft);color:#0f7a3d;border:1px solid rgba(31,160,85,.25)}
+.feedback.no{background:var(--bad-soft);color:#b3271c;border:1px solid rgba(226,59,46,.25)}
+.feedback .fi{width:22px;height:22px;flex:0 0 auto;margin-top:1px}
+.feedback b{font-weight:700}
+.next-row{max-width:620px;margin:16px auto 0;display:flex;justify-content:flex-end}
+.btn-next{display:none;align-items:center;gap:9px;cursor:pointer;border:none;font-family:'Poppins';font-weight:600;font-size:15px;color:#fff;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--blue),var(--blue-deep));box-shadow:var(--shadow-sm);transition:transform .15s}
+.btn-next.show{display:inline-flex}
+.btn-next:hover{transform:translateX(3px)}
+.btn-next svg{width:17px;height:17px}
+
+/* ---- BONUS (Sintoniza) ---- */
+.bonus-head{text-align:center;padding:24px clamp(18px,3vw,30px) 0}
+.bonus-chip{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--purple),var(--blue-deep));padding:8px 16px;border-radius:999px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.bonus-head h3{font-family:'Poppins';font-weight:700;font-size:clamp(20px,3vw,26px);color:var(--blue-deep)}
+.bonus-head p{color:var(--ink-soft);font-size:14px;max-width:540px;margin:8px auto 0;line-height:1.55}
+.tuner{padding:8px clamp(18px,3vw,30px) clamp(20px,3vw,30px)}
+.tuner-canvas-wrap{position:relative;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,#04293f,#062f48);box-shadow:var(--shadow-sm);margin-bottom:14px}
+#tunerCanvas{display:block;width:100%;height:200px}
+.clarity{position:absolute;top:12px;right:14px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cfeaf6;background:rgba(0,0,0,.3);padding:6px 11px;border-radius:8px}
+.clarity b{color:var(--gold)}
+.tuner-info{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-soft);margin-bottom:16px}
+.tuner-info .ti{background:#f3f8fb;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 13px}
+.tuner-info .ti b{color:var(--blue-deep)}
+.dial-row{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.dial-row .freqval{font-family:'Poppins';font-weight:700;font-size:20px;color:var(--orange);min-width:120px;text-align:right}
+#freqDial{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;background:linear-gradient(90deg,#cfe4ef,var(--gold));outline:none;cursor:pointer}
+#freqDial::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--orange));box-shadow:0 0 0 5px rgba(238,114,3,.18),0 4px 10px rgba(0,0,0,.25);cursor:grab}
+#freqDial::-moz-range-thumb{width:30px;height:30px;border:none;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,var(--orange));box-shadow:0 0 0 5px rgba(238,114,3,.18)}
+.btn-lock{display:block;width:100%;cursor:pointer;border:none;font-family:'Poppins';font-weight:700;font-size:16px;color:#fff;padding:15px;border-radius:var(--r-lg);background:linear-gradient(135deg,var(--orange),var(--gold-deep));box-shadow:0 12px 28px -12px rgba(238,114,3,.6);transition:transform .15s}
+.btn-lock:hover{transform:translateY(-2px)}
+.btn-lock:disabled{opacity:.5;cursor:default;transform:none}
+
+/* ---- GAME OVER ---- */
+.over{padding:clamp(26px,5vw,52px);text-align:center}
+.over .ic-big{width:84px;height:84px;border-radius:24px;display:grid;place-items:center;margin:0 auto 18px;background:linear-gradient(135deg,var(--gold),var(--orange));box-shadow:var(--shadow)}
+.over .ic-big svg{width:44px;height:44px;color:#fff}
+.over h2{font-family:'Poppins';font-weight:800;font-size:clamp(26px,4vw,40px);color:var(--blue-deep)}
+.over .sc{font-family:'Poppins';font-weight:800;font-size:clamp(46px,9vw,76px);color:var(--orange);line-height:1;margin:14px 0 4px}
+.over .scl{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint)}
+.over .newbest{display:inline-block;margin-top:12px;font-family:'Poppins';font-weight:700;color:var(--gold-deep);font-size:14px;background:rgba(244,190,0,.14);padding:6px 16px;border-radius:999px}
+.over-stats{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:26px 0}
+.over-stats .os{background:#fbfdff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 22px;min-width:108px;box-shadow:var(--shadow-sm)}
+.over-stats .os .v{font-family:'Poppins';font-weight:700;font-size:24px;color:var(--blue-deep)}
+.over-stats .os .k{font-size:11px;color:var(--ink-faint);margin-top:2px}
+.over .recap{max-width:560px;margin:6px auto 26px;text-align:left;background:#f3f8fb;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px}
+.over .recap .rt{font-family:'Poppins';font-weight:600;font-size:13px;color:var(--blue);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.over .recap .rt svg{width:18px;height:18px;flex:0 0 auto}
+.over .recap p{font-size:13.5px;color:var(--ink-soft);line-height:1.55}
+
+footer{text-align:center;margin-top:30px;color:var(--ink-faint);font-size:12px;line-height:1.7}
+footer b{color:var(--ink-soft)}
+
+/* particles */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+
+@keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .4s}
+.fade-swap{animation:popIn .32s ease}
+
+@media (max-width:560px){
+  .options{grid-template-columns:1fr}
+  .hud .stat{min-width:54px;padding:6px 10px}
+  .modes{gap:9px}.mode-card{width:104px}
+  .dial-row .freqval{min-width:92px;font-size:17px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <img class="logo" id="logoImg" alt="UNAD">
+      <div class="bt">
+        <div class="eyebrow">Ingeniería Electrónica · UNAD</div>
+        <h1>Sintoniza <b>RLC</b></h1>
+      </div>
+    </div>
+    <div class="hud">
+      <div class="stat score"><span class="k">Puntos</span><span class="v" id="hudScore">0</span></div>
+      <div class="stat"><span class="k">Racha</span><span class="v" id="hudStreak">0</span></div>
+      <div class="lives" id="hudLives"></div>
+      <button class="mute-btn" id="muteBtn" title="Silenciar"></button>
+    </div>
+  </header>
+
+  <div class="signal-strip"><canvas id="signalCanvas"></canvas></div>
+
+  <main class="panel" id="panel"><!-- pantallas inyectadas por JS --></main>
+
+  <footer>
+    <b>Sintoniza RLC</b> — juego de conceptos de circuitos · Universidad Nacional Abierta y a Distancia<br>
+    Ecuaciones Diferenciales · aplicación en telecomunicaciones
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   SINTONIZA RLC — Juego de conceptos de circuitos · UNAD
+   ============================================================ */
+(() => {
+'use strict';
+const LOGO_B64="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";
+const $=id=>document.getElementById(id);
+window.addEventListener('DOMContentLoaded',()=>{ $('logoImg').src="data:image/png;base64,"+LOGO_B64; });
+
+/* ---------- estado ---------- */
+const G={ screen:'start', score:0, best:0, lives:3, streak:0, bestStreak:0,
+  correct:0, answered:0, sinceBonus:0, muted:false, locked:false };
+/* artefacto: el mejor puntaje se mantiene solo en memoria durante la sesion */
+
+/* ============================================================
+   AUDIO (Web Audio, sin archivos)
+   ============================================================ */
+let AC=null;
+function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return AC; }
+function tone(freq,dur,type='sine',vol=.18,when=0){
+  if(G.muted) return; const ac=audio(); if(!ac) return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type; o.frequency.value=freq;
+  const t=ac.currentTime+when;
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+.02);
+}
+const sGood=()=>{ tone(660,.12,'sine',.16); tone(880,.16,'sine',.16,.08); tone(1320,.22,'sine',.12,.16); };
+const sBad =()=>{ tone(180,.22,'sawtooth',.14); tone(120,.3,'sine',.12,.05); };
+const sTick=()=>tone(420,.05,'square',.05);
+const sBonus=()=>{ [523,659,784,1047].forEach((f,i)=>tone(f,.3,'triangle',.14,i*.09)); };
+const sClick=()=>tone(520,.05,'sine',.08);
+
+/* ============================================================
+   SEÑAL ANIMADA (cabecera) — motivo de osciloscopio
+   ============================================================ */
+const sig=$('signalCanvas'), sx=sig.getContext('2d');
+let sigT=0, sigTuned=0; // 0..1 nivel de "sintonía" (sube al acertar)
+function sigResize(){ const r=sig.parentElement.getBoundingClientRect(); const d=Math.min(devicePixelRatio||1,2);
+  sig.width=r.width*d; sig.height=r.height*d; sx.setTransform(d,0,0,d,0,0); sig._w=r.width; sig._h=r.height; }
+function drawSignal(){
+  const w=sig._w||300,h=sig._h||46; sx.clearRect(0,0,w,h);
+  sigT+=0.03; sigTuned+=(targetTuned-sigTuned)*0.05;
+  // grid tenue
+  sx.strokeStyle='rgba(120,200,235,.08)'; sx.lineWidth=1;
+  for(let x=0;x<w;x+=26){ sx.beginPath();sx.moveTo(x,0);sx.lineTo(x,h);sx.stroke(); }
+  // señal limpia (sintonizada) + ruido (no sintonizada)
+  const mid=h/2, clean=sigTuned, noise=1-sigTuned;
+  sx.beginPath();
+  for(let x=0;x<=w;x+=2){
+    const base=Math.sin((x*0.05)+sigT)*(h*0.30)*(0.5+0.5*clean);
+    const nz=(Math.sin(x*0.7+sigT*3.1)+Math.sin(x*1.3-sigT*2.2))*(h*0.16)*noise;
+    const y=mid+base+nz;
+    if(x===0)sx.moveTo(x,y); else sx.lineTo(x,y);
+  }
+  const grad=sx.createLinearGradient(0,0,w,0);
+  grad.addColorStop(0,'#0096C7'); grad.addColorStop(.5,'#46d6f0'); grad.addColorStop(1,'#F4BE00');
+  sx.strokeStyle=grad; sx.lineWidth=2.2; sx.lineJoin='round';
+  sx.shadowBlur=8; sx.shadowColor='rgba(70,214,240,.5)'; sx.stroke(); sx.shadowBlur=0;
+  requestAnimationFrame(drawSignal);
+}
+let targetTuned=0.25;
+
+/* ============================================================
+   SÍMBOLOS DE COMPONENTES (SVG)
+   ============================================================ */
+const SYM={
+  resistencia:`<polyline points="5,30 22,30 26,18 34,42 42,18 50,42 58,18 64,30 80,30" fill="none" stroke="C" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`,
+  condensador:`<line x1="5" y1="30" x2="38" y2="30" stroke="C" stroke-width="3"/><line x1="38" y1="13" x2="38" y2="47" stroke="C" stroke-width="3"/><line x1="48" y1="13" x2="48" y2="47" stroke="C" stroke-width="3"/><line x1="48" y1="30" x2="80" y2="30" stroke="C" stroke-width="3"/>`,
+  inductor:`<path d="M5 30 H18 q6 -16 12 0 q6 -16 12 0 q6 -16 12 0 q6 -16 12 0 H80" fill="none" stroke="C" stroke-width="3" stroke-linecap="round"/>`,
+  bateria:`<line x1="5" y1="30" x2="30" y2="30" stroke="C" stroke-width="3"/><line x1="30" y1="16" x2="30" y2="44" stroke="C" stroke-width="3"/><line x1="40" y1="22" x2="40" y2="38" stroke="C" stroke-width="3"/><line x1="48" y1="16" x2="48" y2="44" stroke="C" stroke-width="3"/><line x1="58" y1="22" x2="58" y2="38" stroke="C" stroke-width="3"/><line x1="58" y1="30" x2="80" y2="30" stroke="C" stroke-width="3"/>`,
+  fuenteAC:`<line x1="5" y1="30" x2="22" y2="30" stroke="C" stroke-width="3"/><circle cx="42" cy="30" r="18" fill="none" stroke="C" stroke-width="3"/><path d="M31 30 q5.5 -11 11 0 q5.5 11 11 0" fill="none" stroke="C" stroke-width="2.6"/><line x1="62" y1="30" x2="80" y2="30" stroke="C" stroke-width="3"/>`,
+  diodo:`<line x1="5" y1="30" x2="33" y2="30" stroke="C" stroke-width="3"/><path d="M33 18 L33 42 L52 30 Z" fill="C"/><line x1="52" y1="16" x2="52" y2="44" stroke="C" stroke-width="3"/><line x1="52" y1="30" x2="80" y2="30" stroke="C" stroke-width="3"/>`,
+  tierra:`<line x1="42" y1="8" x2="42" y2="30" stroke="C" stroke-width="3"/><line x1="26" y1="30" x2="58" y2="30" stroke="C" stroke-width="3"/><line x1="32" y1="38" x2="52" y2="38" stroke="C" stroke-width="3"/><line x1="37" y1="46" x2="47" y2="46" stroke="C" stroke-width="3"/>`,
+  interruptor:`<line x1="5" y1="34" x2="28" y2="34" stroke="C" stroke-width="3"/><circle cx="28" cy="34" r="3" fill="C"/><line x1="28" y1="34" x2="54" y2="18" stroke="C" stroke-width="3" stroke-linecap="round"/><circle cx="56" cy="34" r="3" fill="C"/><line x1="56" y1="34" x2="80" y2="34" stroke="C" stroke-width="3"/>`,
+  lampara:`<line x1="5" y1="30" x2="24" y2="30" stroke="C" stroke-width="3"/><circle cx="42" cy="30" r="18" fill="none" stroke="C" stroke-width="3"/><line x1="29.5" y1="17.5" x2="54.5" y2="42.5" stroke="C" stroke-width="2.6"/><line x1="54.5" y1="17.5" x2="29.5" y2="42.5" stroke="C" stroke-width="2.6"/><line x1="60" y1="30" x2="80" y2="30" stroke="C" stroke-width="3"/>`
+};
+const SYM_NAMES={resistencia:'Resistencia',condensador:'Condensador',inductor:'Inductor (bobina)',bateria:'Fuente DC (batería)',fuenteAC:'Fuente AC',diodo:'Diodo',tierra:'Tierra (GND)',interruptor:'Interruptor',lampara:'Lámpara'};
+function symSVG(key,color='#005681',w=110){
+  return `<svg viewBox="0 0 85 60" width="${w}" height="${w*60/85}" xmlns="http://www.w3.org/2000/svg">${SYM[key].replace(/C/g,color)}</svg>`;
+}
+
+/* ============================================================
+   CÓDIGO DE COLORES DE RESISTENCIAS
+   ============================================================ */
+const BANDS=[
+  {n:'negro',hex:'#1a1a1a'},{n:'marrón',hex:'#6b3a12'},{n:'rojo',hex:'#d12d24'},
+  {n:'naranja',hex:'#ee7203'},{n:'amarillo',hex:'#f4be00'},{n:'verde',hex:'#1fa055'},
+  {n:'azul',hex:'#00739b'},{n:'violeta',hex:'#74189b'},{n:'gris',hex:'#7d8a96'},{n:'blanco',hex:'#f2f2f2'}
+];
+const TOL=[{n:'dorado',hex:'#c79a2e',v:'±5%'},{n:'plateado',hex:'#b8c0c8',v:'±10%'}];
+function resistorSVG(b1,b2,mult,tolIdx){
+  const bandX=[34,46,58,76];
+  const cols=[BANDS[b1].hex,BANDS[b2].hex,BANDS[mult].hex,TOL[tolIdx].hex];
+  let bands='';
+  cols.forEach((c,i)=>{ bands+=`<rect x="${bandX[i]-4}" y="20" width="8" height="40" rx="1.5" fill="${c}" stroke="rgba(0,0,0,.15)" stroke-width="1"/>`; });
+  return `<svg viewBox="0 0 160 80" width="230" height="115" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="40" x2="30" y2="40" stroke="#9aa6b2" stroke-width="3"/>
+    <line x1="130" y1="40" x2="160" y2="40" stroke="#9aa6b2" stroke-width="3"/>
+    <rect x="28" y="22" width="104" height="36" rx="16" fill="#e9d3a8" stroke="#cdb583" stroke-width="1.5"/>
+    <rect x="28" y="22" width="104" height="13" rx="13" fill="rgba(255,255,255,.35)"/>
+    ${bands}
+  </svg>`;
+}
+function fmtOhm(v){
+  if(v>=1e6){ const x=v/1e6; return (Number.isInteger(x)?x:+x.toFixed(2))+' MΩ'; }
+  if(v>=1e3){ const x=v/1e3; return (Number.isInteger(x)?x:+x.toFixed(2))+' kΩ'; }
+  return v+' Ω';
+}
+
+/* ============================================================
+   GENERADORES DE PREGUNTAS
+   ============================================================ */
+const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rint(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function genComponent(){
+  const keys=Object.keys(SYM);
+  const ans=pick(keys);
+  const others=shuffle(keys.filter(k=>k!==ans)).slice(0,3);
+  const opts=shuffle([ans,...others]).map(k=>({label:SYM_NAMES[k],correct:k===ans}));
+  return {type:'component',color:'#005681',label:'Componentes',
+    prompt:'¿Qué componente representa este símbolo?',
+    visual:symSVG(ans,'#005681',150), options:opts, mono:false,
+    explain:`Es el símbolo de <b>${SYM_NAMES[ans].toLowerCase()}</b>.`};
+}
+function genColorCode(){
+  const b1=rint(1,9), b2=rint(0,9), mult=rint(0,5), tolIdx=rint(0,1);
+  const val=(b1*10+b2)*Math.pow(10,mult);
+  // distractores
+  const set=new Set([fmtOhm(val)]);
+  const cand=[
+    (b1*10+b2)*Math.pow(10,Math.max(0,mult-1)),
+    (b1*10+b2)*Math.pow(10,mult+1),
+    ((b1)*10+ (b2+1)%10)*Math.pow(10,mult),
+    (b2*10+b1)*Math.pow(10,mult)
+  ];
+  const opts=[{label:fmtOhm(val),correct:true}];
+  for(const c of shuffle(cand)){ if(opts.length>=4)break; const f=fmtOhm(c); if(!set.has(f)){set.add(f);opts.push({label:f,correct:false});} }
+  while(opts.length<4){ const c=val*Math.pow(10,rint(1,2)); const f=fmtOhm(c); if(!set.has(f)){set.add(f);opts.push({label:f,correct:false});} }
+  const names=`${BANDS[b1].n} · ${BANDS[b2].n} · ${BANDS[mult].n} · ${TOL[tolIdx].n}`;
+  return {type:'color',color:'#EE7203',label:'Código de colores',
+    prompt:'¿Cuál es el valor de esta resistencia?',
+    sub:`Bandas: ${names}`,
+    visual:resistorSVG(b1,b2,mult,tolIdx), options:shuffle(opts), mono:true,
+    explain:`${BANDS[b1].n}=${b1}, ${BANDS[b2].n}=${b2}, multiplicador ${BANDS[mult].n}=×10<sup>${mult}</sup> → <b>${fmtOhm(val)}</b> (${TOL[tolIdx].v}).`};
+}
+function genOhm(){
+  const I=pick([0.5,1,1.5,2,2.5,3,4,5]), R=pick([2,3,4,5,6,8,10,12,15,20]);
+  const V=+(I*R).toFixed(2);
+  const mode=pick(['V','I','R']);
+  let prompt,ans,unit,opts,explain;
+  if(mode==='V'){ prompt=`Si I = ${I} A y R = ${R} Ω, ¿cuál es el voltaje V?`; ans=V; unit='V';
+    explain=`Ley de Ohm: V = I·R = ${I}·${R} = <b>${V} V</b>.`; }
+  else if(mode==='I'){ prompt=`Si V = ${V} V y R = ${R} Ω, ¿cuál es la corriente I?`; ans=+I.toFixed(2); unit='A';
+    explain=`Ley de Ohm: I = V/R = ${V}/${R} = <b>${+I.toFixed(2)} A</b>.`; }
+  else { prompt=`Si V = ${V} V e I = ${I} A, ¿cuál es la resistencia R?`; ans=R; unit='Ω';
+    explain=`Ley de Ohm: R = V/I = ${V}/${I} = <b>${R} Ω</b>.`; }
+  const set=new Set([ans]); const opts0=[{label:ans+' '+unit,correct:true}];
+  const deltas=[ans*2,ans/2,ans+pick([1,2,3]),Math.max(0.5,ans-pick([1,2])),ans*1.5];
+  for(const d of shuffle(deltas)){ if(opts0.length>=4)break; const r=+d.toFixed(2); if(r>0&&!set.has(r)){set.add(r);opts0.push({label:r+' '+unit,correct:false});} }
+  while(opts0.length<4){ const r=+(ans+rint(1,9)).toFixed(2); if(!set.has(r)){set.add(r);opts0.push({label:r+' '+unit,correct:false});} }
+  return {type:'ohm',color:'#00739B',label:'Ley de Ohm',prompt,
+    visual:`<div style="font-size:30px">${kx('V = I\\\\cdot R')}</div>`,
+    options:shuffle(opts0), mono:true, explain};
+}
+const UNITS=[
+  {mag:'la resistencia',unit:'Ohmio (Ω)'},{mag:'la capacitancia',unit:'Faradio (F)'},
+  {mag:'la inductancia',unit:'Henrio (H)'},{mag:'el voltaje',unit:'Voltio (V)'},
+  {mag:'la corriente',unit:'Amperio (A)'},{mag:'la carga eléctrica',unit:'Culombio (C)'},
+  {mag:'la potencia',unit:'Vatio (W)'},{mag:'la frecuencia',unit:'Hercio (Hz)'},
+  {mag:'la energía',unit:'Julio (J)'}
+];
+function genUnits(){
+  const item=pick(UNITS);
+  const others=shuffle(UNITS.filter(u=>u.unit!==item.unit)).slice(0,3);
+  const opts=shuffle([item,...others]).map(u=>({label:u.unit,correct:u.unit===item.unit}));
+  return {type:'units',color:'#74189B',label:'Magnitudes y unidades',
+    prompt:`¿En qué unidad se mide ${item.mag}?`,
+    options:opts, mono:false, explain:`${item.mag.charAt(0).toUpperCase()+item.mag.slice(1)} se mide en <b>${item.unit}</b>.`};
+}
+const CONCEPTS=[
+  {q:'¿Qué componente se opone a los cambios bruscos de corriente?',o:['El inductor','El condensador','La resistencia','El diodo'],a:0,e:'El inductor almacena energía en su campo magnético y se opone a los cambios de corriente.'},
+  {q:'¿Qué componente almacena energía en un campo eléctrico?',o:['El condensador','El inductor','La resistencia','La batería'],a:0,e:'El condensador acumula carga entre sus placas, almacenando energía en el campo eléctrico.'},
+  {q:'En un circuito en serie, la corriente que circula es…',o:['La misma en todos los componentes','Diferente en cada componente','Cero','Máxima solo en la resistencia'],a:0,e:'En serie hay un único camino, por lo que la misma corriente atraviesa todos los componentes.'},
+  {q:'En un circuito en paralelo, lo que se mantiene igual es…',o:['El voltaje en cada rama','La corriente en cada rama','La resistencia total','La potencia'],a:0,e:'En paralelo todos los elementos comparten el mismo voltaje entre sus extremos.'},
+  {q:'¿Qué elemento disipa energía en forma de calor?',o:['La resistencia','El condensador ideal','El inductor ideal','El interruptor'],a:0,e:'Solo la resistencia disipa energía (efecto Joule); C y L ideales la almacenan.'},
+  {q:'La reactancia inductiva X_L es igual a…',o:['ωL','1/(ωC)','ωC','R'],a:0,e:'La reactancia inductiva crece con la frecuencia: X_L = ωL.'},
+  {q:'La reactancia capacitiva X_C es igual a…',o:['1/(ωC)','ωC','ωL','R'],a:0,e:'La reactancia capacitiva disminuye con la frecuencia: X_C = 1/(ωC).'},
+  {q:'En resonancia de un RLC serie, la reactancia total es…',o:['Cero (X_L = X_C)','Máxima','Igual a R²','Infinita'],a:0,e:'En resonancia X_L = X_C, se cancelan y la impedancia es mínima (solo R).'},
+  {q:'Un sistema sobreamortiguado se caracteriza por…',o:['Regresar al equilibrio sin oscilar','Oscilar indefinidamente','Oscilar y decaer','Aumentar sin límite'],a:0,e:'Con suficiente resistencia (raíces reales distintas) el sistema no oscila.'},
+  {q:'Un sistema subamortiguado…',o:['Oscila con amplitud decreciente','No oscila nunca','Mantiene amplitud constante','Diverge'],a:0,e:'Raíces complejas: la respuesta oscila mientras su amplitud decae.'},
+  {q:'La frecuencia de resonancia de un RLC serie es…',o:['1/(2π√(LC))','2π√(LC)','RC','L/R'],a:0,e:'f₀ = 1/(2π√(LC)): a esa frecuencia el circuito deja pasar mejor la señal.'},
+  {q:'¿Qué magnitud mide la "oposición total" al paso de corriente alterna?',o:['La impedancia','La resistencia','La capacitancia','La conductancia'],a:0,e:'La impedancia Z combina resistencia y reactancias en corriente alterna.'},
+  {q:'El factor de calidad Q de un circuito resonante indica…',o:['Qué tan selectivo/agudo es el pico','La potencia máxima','El voltaje de la fuente','El número de componentes'],a:0,e:'Un Q alto significa un pico de resonancia estrecho y mayor selectividad.'},
+  {q:'Según la ley de voltajes de Kirchhoff, en un lazo cerrado…',o:['La suma de los voltajes es cero','La suma de corrientes es cero','El voltaje se duplica','No se conserva la energía'],a:0,e:'La suma algebraica de las caídas y subidas de voltaje en un lazo es cero.'},
+  {q:'¿Qué hace un circuito RLC en la entrada de un radio?',o:['Sintoniza/selecciona una frecuencia','Amplifica el sonido','Almacena estaciones','Convierte AC en DC'],a:0,e:'Actúa como filtro selectivo: deja pasar la frecuencia deseada y rechaza las demás.'},
+];
+function genConcept(){
+  const c=pick(CONCEPTS);
+  const correctText=c.o[c.a];
+  const opts=shuffle(c.o.map((t,i)=>({label:t,correct:i===c.a})));
+  return {type:'concept',color:'#005681',label:'Conceptos RLC',prompt:c.q,
+    options:opts, mono:false, explain:c.e};
+}
+const GENERATORS=[genComponent,genColorCode,genOhm,genUnits,genConcept,genConcept,genComponent,genColorCode];
+
+/* ---------- KaTeX helper ---------- */
+function kx(t){ try{ return katex.renderToString(t,{throwOnError:false}); }catch(e){ return t; } }
+
+/* ============================================================
+   RENDER DE PANTALLAS
+   ============================================================ */
+const panel=$('panel');
+function renderHUD(){
+  $('hudScore').textContent=G.score;
+  $('hudStreak').textContent=G.streak;
+  const lv=$('hudLives'); lv.innerHTML='';
+  for(let i=0;i<3;i++){
+    lv.insertAdjacentHTML('beforeend',
+      `<svg class="heart ${i>=G.lives?'lost':''}" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-10-9.2C.6 8.5 2 5 5.2 5c2 0 3.2 1.2 3.8 2.2C9.6 6.2 10.8 5 12.8 5 16 5 17.4 8.5 16 11.8 13.5 16.4 12 21 12 21z" transform="translate(-0.8,0)"/></svg>`);
+  }
+}
+function renderMute(){
+  $('muteBtn').innerHTML = G.muted
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a9 9 0 0 1 0 14"/></svg>';
+}
+
+function showStart(){
+  G.screen='start'; targetTuned=0.3;
+  panel.className='panel';
+  panel.innerHTML=`
+  <div class="start fade-swap">
+    <div class="badge">◉ Recurso educativo · Circuitos eléctricos</div>
+    <h2>Pon a prueba tus<br><span class="em">circuitos</span></h2>
+    <p class="tag">Un reto rápido para dominar los conceptos básicos: símbolos, código de colores, ley de Ohm, unidades y el comportamiento de los circuitos RLC. ¿Logras la mejor racha?</p>
+    <div class="modes">
+      <div class="mode-card"><div class="ic" style="background:linear-gradient(135deg,#005681,#00739B)">${icon('chip')}</div><div class="t">Componentes</div><div class="d">Símbolos y unidades</div></div>
+      <div class="mode-card"><div class="ic" style="background:linear-gradient(135deg,#EE7203,#F4BE00)">${icon('bands')}</div><div class="t">Código de colores</div><div class="d">Lee resistencias</div></div>
+      <div class="mode-card"><div class="ic" style="background:linear-gradient(135deg,#74189B,#005681)">${icon('wave')}</div><div class="t">Sintonía</div><div class="d">Resonancia RLC</div></div>
+    </div>
+    <button class="btn-play" id="btnStart">${icon('play')} Comenzar a jugar</button>
+    <div class="best-note">Mejor puntaje: <b id="bestNote">${G.best}</b></div>
+  </div>`;
+  $('btnStart').addEventListener('click',()=>{ audio(); sClick(); startGame(); });
+}
+function icon(n){
+  const m={
+    play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    chip:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>',
+    bands:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h4M18 12h4"/><rect x="6" y="7" width="12" height="10" rx="3" fill="rgba(255,255,255,.25)" stroke="currentColor"/><path d="M10 7v10M14 7v10"/></svg>',
+    wave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12c2-7 4-7 6 0s4 7 6 0 4-7 6 0"/></svg>',
+    trophy:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10v3a5 5 0 0 1-10 0V4zM5 4H3v2a4 4 0 0 0 4 4M19 4h2v2a4 4 0 0 1-4 4M9 14h6l1 6H8l1-6z"/></svg>',
+    bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>'
+  };
+  return m[n]||'';
+}
+
+/* ---------- ciclo de juego ---------- */
+function startGame(){
+  G.score=0; G.lives=3; G.streak=0; G.bestStreak=0; G.correct=0; G.answered=0; G.sinceBonus=0;
+  renderHUD(); nextRound();
+}
+function nextRound(){
+  if(G.lives<=0){ showOver(); return; }
+  if(G.sinceBonus>=4){ G.sinceBonus=0; showBonus(); return; }
+  showQuestion(pick(GENERATORS)());
+}
+
+let timer=null, timeLeft=0, timeTotal=22;
+function showQuestion(q){
+  G.screen='play'; G.locked=false;
+  panel.className='panel';
+  const optsHTML=q.options.map((o,i)=>`
+    <button class="opt ${q.mono?'mono':''}" data-i="${i}">
+      <span class="key">${'ABCD'[i]}</span><span class="lbl">${o.label}</span>
+    </button>`).join('');
+  panel.innerHTML=`
+  <div class="play fade-swap">
+    <div class="timerbar"><div class="fill" id="timerFill"></div></div>
+    <div class="play-head">
+      <span class="qtype" style="background:${q.color}">${dotFor(q.type)} ${q.label}</span>
+      <span class="streak-pill ${G.streak>=2?'show':''}" id="streakPill">${icon('bolt')} Racha ×${mult()}</span>
+    </div>
+    <div class="q-body">
+      <div class="q-prompt">${q.prompt}</div>
+      ${q.sub?`<div class="q-sub">${q.sub}</div>`:''}
+      ${q.visual?`<div class="q-visual">${q.visual}</div>`:''}
+      <div class="options" id="options">${optsHTML}</div>
+      <div class="feedback" id="feedback"></div>
+      <div class="next-row"><button class="btn-next" id="btnNext">Siguiente ${icon('play')}</button></div>
+    </div>
+  </div>`;
+  $('options').querySelectorAll('.opt').forEach(b=>{
+    b.addEventListener('click',()=>answer(q,+b.dataset.i,b));
+  });
+  window.__cidx=q.options.findIndex(o=>o.correct); // referencia para pruebas automatizadas
+  $('btnNext').addEventListener('click',()=>{ sClick(); G.sinceBonus++; nextRound(); });
+  startTimer(q);
+}
+function dotFor(t){ return '<span style="width:7px;height:7px;border-radius:50%;background:#fff;display:inline-block;opacity:.85"></span>'; }
+function mult(){ return 1+Math.min(4,Math.floor(G.streak/2)); }
+
+function startTimer(q){
+  clearInterval(timer); timeTotal=22; timeLeft=timeTotal;
+  const fill=$('timerFill');
+  const t0=performance.now();
+  timer=setInterval(()=>{
+    const el=(performance.now()-t0)/1000; timeLeft=Math.max(0,timeTotal-el);
+    if(fill) fill.style.transform=`scaleX(${timeLeft/timeTotal})`;
+    if(timeLeft<=6 && Math.floor(timeLeft*2)%2===0 && !G.locked) {}
+    if(timeLeft<=0){ clearInterval(timer); if(!G.locked) answer(q,-1,null); }
+  },80);
+}
+
+function answer(q,idx,btn){
+  if(G.locked) return; G.locked=true; clearInterval(timer);
+  const opts=$('options').querySelectorAll('.opt');
+  const correctIdx=q.options.findIndex(o=>o.correct);
+  const isCorrect= idx>=0 && q.options[idx].correct;
+  G.answered++;
+  opts.forEach((b,i)=>{
+    b.disabled=true;
+    if(i===correctIdx) b.classList.add('correct');
+    else if(i===idx) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+  const fb=$('feedback');
+  if(isCorrect){
+    const speed=Math.round((timeLeft/timeTotal)*40);
+    const base=100, gained=(base+speed)*mult();
+    G.score+=gained; G.correct++; G.streak++; G.bestStreak=Math.max(G.bestStreak,G.streak);
+    targetTuned=Math.min(1,0.3+G.streak*0.12);
+    sGood(); burst('#1fa055');
+    fb.className='feedback ok show';
+    fb.innerHTML=`<svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      <div><b>¡Correcto! +${gained}</b> ${mult()>1?`(racha ×${mult()})`:''}<br>${q.explain}</div>`;
+  } else {
+    G.lives--; G.streak=0; targetTuned=Math.max(0.2,targetTuned-0.3);
+    sBad(); $('panel').querySelector('.play')?.classList.add('shake');
+    fb.className='feedback no show';
+    const msg = idx<0 ? '<b>¡Se acabó el tiempo!</b>' : '<b>Incorrecto.</b>';
+    fb.innerHTML=`<svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+      <div>${msg} ${q.explain}</div>`;
+  }
+  renderHUD();
+  $('hudScore').animate?.([{transform:'scale(1.3)'},{transform:'scale(1)'}],{duration:300});
+  const next=$('btnNext'); next.classList.add('show');
+  if(G.lives<=0){ next.innerHTML='Ver resultados '+icon('trophy'); }
+}
+
+/* ============================================================
+   BONUS — SINTONIZA LA SEÑAL (resonancia)
+   ============================================================ */
+let bonusData=null, tuneRAF=null;
+function showBonus(){
+  G.screen='bonus'; targetTuned=0.5;
+  sBonus();
+  const L=pick([0.5,1,2]), C=pick([0.1,0.2,0.25,0.5]);
+  const f0=1/(2*Math.PI*Math.sqrt(L*C));
+  const fmax=Math.max(2, f0*2.4);
+  bonusData={L,C,f0,fmax,locked:false};
+  panel.className='panel';
+  panel.innerHTML=`
+  <div class="fade-swap">
+    <div class="bonus-head">
+      <div class="bonus-chip">★ Ronda bonus · Sintoniza la señal</div>
+      <h3>Ayuda a Mariana a sintonizar su radio</h3>
+      <p>Mueve el dial hasta la <b>frecuencia de resonancia</b> del circuito para captar la emisora con la mayor claridad posible. ¡Cuanto más cerca, más puntos!</p>
+    </div>
+    <div class="tuner">
+      <div class="tuner-canvas-wrap">
+        <canvas id="tunerCanvas"></canvas>
+        <div class="clarity">Claridad: <b id="clarityVal">0%</b></div>
+      </div>
+      <div class="tuner-info">
+        <span class="ti">Inductancia: <b>L = ${L} H</b></span>
+        <span class="ti">Capacitancia: <b>C = ${C} F</b></span>
+        <span class="ti" id="formulaTi"></span>
+      </div>
+      <div class="dial-row">
+        <input type="range" id="freqDial" min="0.05" max="${fmax.toFixed(3)}" step="0.001" value="${(fmax*0.2).toFixed(3)}">
+        <span class="freqval" id="freqVal">— Hz</span>
+      </div>
+      <button class="btn-lock" id="btnLock">🔒 Fijar sintonía</button>
+    </div>
+  </div>`;
+  $('formulaTi').innerHTML='Resonancia: '+kx('f_0=\\frac{1}{2\\pi\\sqrt{LC}}');
+  const dial=$('freqDial');
+  tunerResize();
+  const update=()=>{ const f=parseFloat(dial.value); $('freqVal').textContent=f.toFixed(3)+' Hz';
+    drawTuner(f); };
+  dial.addEventListener('input',()=>{ if(bonusData.locked)return; sTick(); update(); });
+  $('btnLock').addEventListener('click',()=>lockTune(parseFloat(dial.value)));
+  update();
+  loopTuner();
+}
+function clarityAt(f){
+  const {f0}=bonusData; const bw=Math.max(0.06,f0*0.18);
+  return 1/(1+Math.pow((f-f0)/bw,2)); // lorentziana 0..1
+}
+let tc=null,tcx=null;
+function tunerResize(){
+  tc=$('tunerCanvas'); if(!tc)return; tcx=tc.getContext('2d');
+  const r=tc.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2);
+  tc.width=r.width*d; tc.height=200*d; tcx.setTransform(d,0,0,d,0,0); tc._w=r.width; tc._h=200;
+}
+let tunePhase=0;
+function drawTuner(fCur){
+  if(!tcx)return; const w=tc._w,h=tc._h; tcx.clearRect(0,0,w,h);
+  const {f0,fmax}=bonusData;
+  // grid
+  tcx.strokeStyle='rgba(120,200,235,.08)';tcx.lineWidth=1;
+  for(let x=0;x<w;x+=w/10){tcx.beginPath();tcx.moveTo(x,0);tcx.lineTo(x,h);tcx.stroke();}
+  // curva de resonancia (claridad vs frecuencia)
+  tcx.beginPath();
+  for(let px=0;px<=w;px+=2){ const f=(px/w)*fmax; const c=clarityAt(f); const y=h-18-c*(h-46);
+    if(px===0)tcx.moveTo(px,y);else tcx.lineTo(px,y); }
+  tcx.strokeStyle='rgba(70,214,240,.55)';tcx.lineWidth=2;tcx.stroke();
+  tcx.lineTo(w,h-18);tcx.lineTo(0,h-18);tcx.closePath();
+  tcx.fillStyle='rgba(70,214,240,.08)';tcx.fill();
+  // línea de f0 (oculta hasta fijar) -> mostramos zona objetivo sutil
+  const x0=(f0/fmax)*w;
+  // posición actual
+  const cx=(fCur/fmax)*w; const cl=clarityAt(fCur);
+  // señal animada cuya nitidez depende de la claridad
+  tunePhase+=0.15;
+  tcx.beginPath();
+  for(let px=0;px<=w;px+=2){
+    const clean=Math.sin(px*0.06+tunePhase)*(h*0.12)*(0.3+0.7*cl);
+    const noise=(Math.sin(px*0.8+tunePhase*2)+Math.sin(px*1.7-tunePhase))*(h*0.07)*(1-cl);
+    const y=28+clean+noise;
+    if(px===0)tcx.moveTo(px,y);else tcx.lineTo(px,y);
+  }
+  tcx.strokeStyle=`rgba(244,190,0,${0.4+0.6*cl})`;tcx.lineWidth=2;tcx.shadowBlur=8*cl;tcx.shadowColor='#F4BE00';tcx.stroke();tcx.shadowBlur=0;
+  // marcador de dial
+  tcx.strokeStyle='#EE7203';tcx.lineWidth=2.5;tcx.setLineDash([4,4]);
+  tcx.beginPath();tcx.moveTo(cx,0);tcx.lineTo(cx,h);tcx.stroke();tcx.setLineDash([]);
+  tcx.fillStyle='#EE7203';tcx.beginPath();tcx.arc(cx,h-18-cl*(h-46),5,0,7);tcx.fill();
+  // claridad %
+  const cv=$('clarityVal'); if(cv){ cv.textContent=Math.round(cl*100)+'%'; }
+}
+function loopTuner(){ if(G.screen!=='bonus')return; const f=parseFloat($('freqDial').value); drawTuner(f); tuneRAF=requestAnimationFrame(loopTuner); }
+function lockTune(f){
+  if(bonusData.locked)return; bonusData.locked=true;
+  $('freqDial').disabled=true; $('btnLock').disabled=true;
+  const cl=clarityAt(f); const gained=Math.round(cl*500);
+  G.score+=gained; renderHUD();
+  if(cl>0.85){ sBonus(); burst('#F4BE00',90); targetTuned=1; } else if(cl>0.5){ sGood(); burst('#00739B',50); } else { sTick(); }
+  const {f0}=bonusData;
+  const fb=document.createElement('div');
+  fb.className='feedback ok show'; fb.style.maxWidth='none'; fb.style.margin='14px 0 0';
+  fb.innerHTML=`<svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    <div><b>Claridad ${Math.round(cl*100)}% · +${gained} puntos</b><br>
+    La resonancia exacta es f₀ = 1/(2π√(LC)) = <b>${f0.toFixed(3)} Hz</b>. ${cl>0.85?'¡Sintonía perfecta! 📻':cl>0.5?'¡Buena señal!':'Quedó algo de ruido, sigue practicando.'}</div>`;
+  const tunerEl=document.querySelector('.tuner');
+  tunerEl.appendChild(fb);
+  const btn=document.createElement('button');
+  btn.className='btn-next show'; btn.style.marginTop='14px';
+  btn.innerHTML='Continuar '+icon('play');
+  btn.addEventListener('click',()=>{ sClick(); cancelAnimationFrame(tuneRAF); nextRound(); });
+  const row=document.createElement('div'); row.className='next-row'; row.appendChild(btn);
+  tunerEl.appendChild(row);
+}
+
+/* ============================================================
+   GAME OVER
+   ============================================================ */
+function showOver(){
+  G.screen='over'; targetTuned=0.3;
+  const isBest=G.score>G.best;
+  if(isBest){ G.best=G.score; }
+  const acc=G.answered?Math.round(G.correct/G.answered*100):0;
+  let recap;
+  if(acc>=80) recap='Excelente dominio de los fundamentos. Estás listo para profundizar en el análisis de circuitos RLC y su respuesta en frecuencia.';
+  else if(acc>=50) recap='Buen avance. Repasa el código de colores y las reactancias (X_L = ωL, X_C = 1/ωC) para afinar tu puntería.';
+  else recap='Sigue practicando los conceptos básicos: símbolos, ley de Ohm y unidades. Cada intento te acerca a sintonizar la señal.';
+  panel.className='panel';
+  panel.innerHTML=`
+  <div class="over fade-swap">
+    <div class="ic-big">${icon(G.score>=1000?'trophy':'bolt')}</div>
+    <h2>${G.score>=1000?'¡Gran partida!':'Fin del juego'}</h2>
+    <div class="sc">${G.score}</div>
+    <div class="scl">Puntos totales</div>
+    ${isBest?'<div class="newbest">★ ¡Nuevo récord!</div>':`<div class="best-note" style="margin-top:12px;font-family:'JetBrains Mono';font-size:12px;color:var(--ink-faint)">Mejor: ${G.best}</div>`}
+    <div class="over-stats">
+      <div class="os"><div class="v">${G.correct}/${G.answered}</div><div class="k">Aciertos</div></div>
+      <div class="os"><div class="v">${acc}%</div><div class="k">Precisión</div></div>
+      <div class="os"><div class="v">${G.bestStreak}</div><div class="k">Mejor racha</div></div>
+    </div>
+    <div class="recap"><div class="rt">${icon('wave')} Recomendación</div><p>${recap}</p></div>
+    <button class="btn-play" id="btnRetry">${icon('play')} Jugar de nuevo</button>
+  </div>`;
+  $('btnRetry').addEventListener('click',()=>{ sClick(); startGame(); });
+  if(G.score>=1000||isBest) burst('#F4BE00',120);
+}
+
+/* ============================================================
+   PARTÍCULAS (confeti)
+   ============================================================ */
+const fx=$('fx'),fxc=fx.getContext('2d'); let parts=[];
+function fxResize(){ fx.width=innerWidth;fx.height=innerHeight; }
+function burst(color,n=46){
+  const cx=innerWidth/2, cy=innerHeight*0.4;
+  const cols=[color,'#EE7203','#00739B','#F4BE00','#74189B'];
+  for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=4+Math.random()*9;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-4,life:1,col:cols[i%cols.length],sz:4+Math.random()*5,rot:Math.random()*6}); }
+}
+function fxLoop(){
+  fxc.clearRect(0,0,fx.width,fx.height);
+  parts=parts.filter(p=>p.life>0);
+  for(const p of parts){ p.vy+=0.28; p.x+=p.vx; p.y+=p.vy; p.life-=0.014; p.rot+=0.2;
+    fxc.save();fxc.translate(p.x,p.y);fxc.rotate(p.rot);fxc.globalAlpha=Math.max(0,p.life);
+    fxc.fillStyle=p.col;fxc.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*0.6);fxc.restore(); }
+  requestAnimationFrame(fxLoop);
+}
+
+/* ============================================================
+   EVENTOS GLOBALES / INIT
+   ============================================================ */
+$('muteBtn').addEventListener('click',()=>{ G.muted=!G.muted; renderMute(); if(!G.muted){audio();sClick();} });
+document.addEventListener('keydown',e=>{
+  if(G.screen==='play'&&!G.locked){ const k=e.key.toUpperCase(); const map={'A':0,'B':1,'C':2,'D':3,'1':0,'2':1,'3':2,'4':3};
+    if(k in map){ const b=$('options')?.querySelector(`.opt[data-i="${map[k]}"]`); if(b)b.click(); } }
+  else if(G.screen==='play'&&G.locked&&(e.key==='Enter'||e.key===' ')){ $('btnNext')?.click(); }
+});
+function onResize(){ sigResize(); fxResize(); if(G.screen==='bonus') tunerResize(); }
+window.addEventListener('resize',onResize);
+
+function init(){
+  renderHUD(); renderMute(); sigResize(); fxResize();
+  drawSignal(); fxLoop(); showStart();
+}
+function whenReady(){ if(window.katex){ init(); } else setTimeout(whenReady,60); }
+whenReady();
+})();
+</script>
+</body>
+</html>
